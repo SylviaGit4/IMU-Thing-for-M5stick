@@ -9,56 +9,57 @@ M5.Lcd.setTextSize(2); // Text size
 
 // Function to map value to display range
 function mapValue(value, inMin, inMax, outMin, outMax) {
-  return ((value - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin;
+  return Math.max(outMin, Math.min(outMax, ((value - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin));
 }
 
-// Function to display IMU data visually
+// Function to draw a bar graph
+function drawBarGraph(x, y, width, height, color, value, maxValue) {
+  const barWidth = mapValue(value, -maxValue, maxValue, 0, width);
+  M5.Lcd.fillRect(x, y, width, height, 0x0000); // Clear previous bar
+  M5.Lcd.fillRect(x, y, barWidth, height, color); // Draw new bar
+}
+
+// Function to update IMU data
 function displayIMUData() {
-  // Retrieve accelerometer data (x, y, z)
-  const accel = M5.IMU.getAccel(); // {x: number, y: number, z: number}
+  try {
+    // Retrieve accelerometer data
+    const accel = M5.IMU.getAccel();
+    if (!accel) throw new Error("Accelerometer data unavailable");
 
-  // Retrieve gyroscope data (x, y, z)
-  const gyro = M5.IMU.getGyro(); // {x: number, y: number, z: number}
+    // Retrieve gyroscope data
+    const gyro = M5.IMU.getGyro();
+    if (!gyro) throw new Error("Gyroscope data unavailable");
 
-  // Retrieve magnetometer data (x, y, z)
-  const mag = M5.IMU.getMag(); // {x: number, y: number, z: number}
+    // Retrieve magnetometer data
+    const mag = M5.IMU.getMag();
+    if (!mag) throw new Error("Magnetometer data unavailable");
 
-  // Clear display
-  M5.Lcd.fillScreen(0);
+    // Visualize accelerometer data
+    M5.Lcd.setCursor(0, 0);
+    M5.Lcd.println("Accel (X, Y, Z):");
+    drawBarGraph(30, 30, 200, 20, 0xF800, accel.x, 2); // X-axis
+    drawBarGraph(30, 60, 200, 20, 0x07E0, accel.y, 2); // Y-axis
+    drawBarGraph(30, 90, 200, 20, 0x001F, accel.z, 2); // Z-axis
 
-  // Draw axes labels
-  M5.Lcd.setCursor(0, 0);
-  M5.Lcd.println("Accel (X, Y, Z):");
+    // Visualize gyroscope data
+    M5.Lcd.setCursor(0, 130);
+    M5.Lcd.println("Gyro (X, Y, Z):");
+    drawBarGraph(30, 150, 200, 20, 0xF800, gyro.x, 250); // X-axis
+    drawBarGraph(30, 180, 200, 20, 0x07E0, gyro.y, 250); // Y-axis
+    drawBarGraph(30, 210, 200, 20, 0x001F, gyro.z, 250); // Z-axis
 
-  // Visualize accelerometer data
-  M5.Lcd.fillRect(30, 30, 200, 20, 0xFFFF);
-  M5.Lcd.fillRect(30, 60, 200, 20, 0xFFFF);
-  M5.Lcd.fillRect(30, 90, 200, 20, 0xFFFF);
-  M5.Lcd.fillRect(30, 30, mapValue(accel.x, -2, 2, 0, 200), 20, 0xF800);
-  M5.Lcd.fillRect(30, 60, mapValue(accel.y, -2, 2, 0, 200), 20, 0x07E0);
-  M5.Lcd.fillRect(30, 90, mapValue(accel.z, -2, 2, 0, 200), 20, 0x001F);
-
-  M5.Lcd.setCursor(0, 130);
-  M5.Lcd.println("Gyro (X, Y, Z):");
-
-  // Visualize gyroscope data
-  M5.Lcd.fillRect(30, 150, 200, 20, 0xFFFF);
-  M5.Lcd.fillRect(30, 180, 200, 20, 0xFFFF);
-  M5.Lcd.fillRect(30, 210, 200, 20, 0xFFFF);
-  M5.Lcd.fillRect(30, 150, mapValue(gyro.x, -250, 250, 0, 200), 20, 0xF800);
-  M5.Lcd.fillRect(30, 180, mapValue(gyro.y, -250, 250, 0, 200), 20, 0x07E0);
-  M5.Lcd.fillRect(30, 210, mapValue(gyro.z, -250, 250, 0, 200), 20, 0x001F);
-
-  M5.Lcd.setCursor(0, 250);
-  M5.Lcd.println("Mag (X, Y, Z):");
-
-  // Visualize magnetometer data
-  M5.Lcd.fillRect(30, 270, 200, 20, 0xFFFF);
-  M5.Lcd.fillRect(30, 300, 200, 20, 0xFFFF);
-  M5.Lcd.fillRect(30, 330, 200, 20, 0xFFFF);
-  M5.Lcd.fillRect(30, 270, mapValue(mag.x, -50, 50, 0, 200), 20, 0xF800);
-  M5.Lcd.fillRect(30, 300, mapValue(mag.y, -50, 50, 0, 200), 20, 0x07E0);
-  M5.Lcd.fillRect(30, 330, mapValue(mag.z, -50, 50, 0, 200), 20, 0x001F);
+    // Visualize magnetometer data
+    M5.Lcd.setCursor(0, 250);
+    M5.Lcd.println("Mag (X, Y, Z):");
+    drawBarGraph(30, 270, 200, 20, 0xF800, mag.x, 50); // X-axis
+    drawBarGraph(30, 300, 200, 20, 0x07E0, mag.y, 50); // Y-axis
+    drawBarGraph(30, 330, 200, 20, 0x001F, mag.z, 50); // Z-axis
+  } catch (error) {
+    M5.Lcd.fillScreen(0); // Clear screen
+    M5.Lcd.setCursor(0, 0);
+    M5.Lcd.println("Error:");
+    M5.Lcd.println(error.message);
+  }
 }
 
 // Update display every 100ms
